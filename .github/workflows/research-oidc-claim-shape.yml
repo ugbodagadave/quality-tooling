@@ -1,0 +1,19 @@
+# Local research probe by ireniumsecurity (HackerOne). Prints the decoded OIDC
+# payload of a pull_request-event run only; the raw token is never printed.
+name: OIDC claim shape probe (local research)
+on: [pull_request]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  claims:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print decoded OIDC claims (payload only)
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "event=${GITHUB_EVENT_NAME} repo=${GITHUB_REPOSITORY} owner=${GITHUB_REPOSITORY_OWNER} ref=${GITHUB_REF} head_ref=${GITHUB_HEAD_REF} actor=${GITHUB_ACTOR}"
+          curl -s -H "Authorization: bearer $ACTIONS_RUNTIME_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=github-grafana-access" \
+            | python3 -c 'import sys,json,base64;t=json.load(sys.stdin)["value"];p=t.split(".")[1];p+="="*(-len(p)%4);print(json.dumps(json.loads(base64.urlsafe_b64decode(p)),indent=2,sort_keys=True))'
